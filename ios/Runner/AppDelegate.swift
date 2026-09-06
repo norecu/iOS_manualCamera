@@ -56,7 +56,30 @@ cameraChannel.setMethodCallHandler { [weak self] call, result in
                 )
             }
         }
+    case "setISO":
+    guard let iso = call.arguments as? Double else {
+        result(
+            FlutterError(
+                code: "INVALID_ISO",
+                message: "ISO 값이 올바르지 않습니다.",
+                details: nil
+            )
+        )
+        return
+    }
 
+    do {
+        try self.cameraEngine.setISO(Float(iso))
+        result(nil)
+    } catch {
+        result(
+            FlutterError(
+                code: "ISO_FAILED",
+                message: error.localizedDescription,
+                details: nil
+            )
+        )
+    }
     default:
         result(FlutterMethodNotImplemented)
     }
@@ -102,7 +125,7 @@ final class CameraEngine: NSObject, AVCapturePhotoCaptureDelegate {
     let session = AVCaptureSession()
 
     private let photoOutput = AVCapturePhotoOutput()
-    private var videoDevice: AVCaptureDevice?
+    private var cameraDevice: AVCaptureDevice?
     private var captureCompletion: ((Result<Void, Error>) -> Void)?
 
     func setup() throws {
@@ -214,6 +237,27 @@ final class CameraEngine: NSObject, AVCapturePhotoCaptureDelegate {
             }
         }   
     }
+
+    func setISO(_ iso: Float) throws {
+    guard let device = cameraDevice else {
+        throw CameraError.cameraUnavailable
+    }
+
+    try device.lockForConfiguration()
+    defer {
+        device.unlockForConfiguration()
+    }
+
+    let minISO = device.activeFormat.minISO
+    let maxISO = device.activeFormat.maxISO
+
+    let clampedISO = min(max(iso, minISO), maxISO)
+
+    device.setExposureModeCustom(
+        duration: device.exposureDuration,
+        iso: clampedISO
+    )
+}
 }
 
 enum CameraError: Error {

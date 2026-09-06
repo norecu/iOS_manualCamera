@@ -30,6 +30,7 @@ class _CameraPageState extends State<CameraPage> {
   static const MethodChannel _cameraChannel = MethodChannel('ios-camera');
 
   bool _isCapturing = false;
+  double _iso = 100;
 
   Future<void> _capturePhoto() async {
     if (_isCapturing) {
@@ -74,6 +75,18 @@ class _CameraPageState extends State<CameraPage> {
           _isCapturing = false;
         });
       }
+    }
+  }
+
+  Future<void> _setISO(double value) async {
+    try {
+      await _cameraChannel.invokeMethod('setISO', value);
+
+      setState(() {
+        _iso = value;
+      });
+    } on PlatformException catch (e) {
+      debugPrint('ISO 변경 실패: ${e.message}');
     }
   }
 
@@ -129,10 +142,13 @@ class _CameraPageState extends State<CameraPage> {
                       color: Colors.black.withValues(alpha: 0.55),
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _ValueItem(title: 'ISO', value: 'AUTO'),
+                        _ValueItem(
+                          title: 'ISO',
+                          value: _iso.round().toString(),
+                        ),
                         _ValueItem(title: 'SHUTTER', value: 'AUTO'),
                         _ValueItem(title: 'EV', value: '0.0'),
                         _ValueItem(title: 'FOCUS', value: 'AUTO'),
@@ -142,6 +158,39 @@ class _CameraPageState extends State<CameraPage> {
                   ),
 
                   const SizedBox(height: 24),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Row(
+                      children: [
+                        const Text(
+                          'ISO',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Expanded(
+                          child: Slider(
+                            value: _iso,
+                            min: 32,
+                            max: 3200,
+                            divisions: 99,
+                            onChanged: _setISO,
+                          ),
+                        ),
+                        SizedBox(
+                          width: 50,
+                          child: Text(
+                            _iso.round().toString(),
+                            textAlign: TextAlign.right,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
 
                   // 촬영 버튼
                   GestureDetector(
