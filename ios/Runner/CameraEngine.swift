@@ -279,34 +279,6 @@ func setShutter(_ seconds: Double) throws {
     )
 }
 
-// MARK: - Focus
-
-func setFocus(_ focus: Float) throws {
-
-    guard let device = cameraDevice else {
-        throw CameraError.cameraUnavailable
-    }
-
-    guard device.isFocusModeSupported(.locked) else {
-        throw CameraError.focusUnavailable
-    }
-
-    try device.lockForConfiguration()
-
-    defer {
-        device.unlockForConfiguration()
-    }
-
-    let clampedFocus = min(
-        max(focus, 0.0),
-        1.0
-    )
-
-    device.setFocusModeLocked(
-        lensPosition: clampedFocus
-    )
-}
-
 // MARK: - Zoom
 
 func setZoom(_ zoom: Float) throws {
