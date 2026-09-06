@@ -160,12 +160,13 @@ final class CameraEngine: NSObject, AVCapturePhotoCaptureDelegate {
     func capturePhoto(completion: @escaping (Result<Void, Error>) -> Void) {
         let settings = AVCapturePhotoSettings()
 
-        if photoOutput.availablePhotoCodecTypes.contains(.hevc) {
-            settings.codec = .hevc
-        }
 
         photoOutput.capturePhoto(with: settings, delegate: self)
         self.captureCompletion = completion
+        photoOutput.capturePhoto(
+            with: settings,
+            delegate: self
+        )
     }
 
     func photoOutput(
