@@ -23,26 +23,26 @@ class CameraPage extends StatefulWidget {
   const CameraPage({super.key});
 
   @override
-  State<CameraPage> createState() => _CameraPageState();
+  State<CameraPage> createState() => CameraPageState();
 }
 
-class _CameraPageState extends State<CameraPage> {
-  static const MethodChannel _cameraChannel = MethodChannel('ios-camera');
+class CameraPageState extends State<CameraPage> {
+  static const MethodChannel cameraChannel = MethodChannel('ios-camera');
 
-  bool _isCapturing = false;
-  double _iso = 100;
+  bool isCapturing = false;
+  double iso = 100;
 
-  Future<void> _capturePhoto() async {
-    if (_isCapturing) {
+  Future<void> capturePhoto() async {
+    if (isCapturing) {
       return;
     }
 
     setState(() {
-      _isCapturing = true;
+      isCapturing = true;
     });
 
     try {
-      await _cameraChannel.invokeMethod('capturePhoto');
+      await cameraChannel.invokeMethod('capturePhoto');
 
       if (!mounted) {
         return;
@@ -72,18 +72,22 @@ class _CameraPageState extends State<CameraPage> {
     } finally {
       if (mounted) {
         setState(() {
-          _isCapturing = false;
+          isCapturing = false;
         });
       }
     }
   }
 
-  Future<void> _setISO(double value) async {
+  Future<void> setISO(double value) async {
     try {
-      await _cameraChannel.invokeMethod('setISO', value);
+      await cameraChannel.invokeMethod('setISO', value);
+
+      if (!mounted) {
+        return;
+      }
 
       setState(() {
-        _iso = value;
+        iso = value;
       });
     } on PlatformException catch (e) {
       debugPrint('ISO 변경 실패: ${e.message}');
@@ -109,7 +113,7 @@ class _CameraPageState extends State<CameraPage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _topButton(icon: Icons.flash_off, onPressed: () {}),
+                  topButton(icon: Icons.flash_off, onPressed: () {}),
                   const Text(
                     'MANUAL',
                     style: TextStyle(
@@ -118,12 +122,12 @@ class _CameraPageState extends State<CameraPage> {
                       letterSpacing: 2,
                     ),
                   ),
-                  _topButton(icon: Icons.settings, onPressed: () {}),
+                  topButton(icon: Icons.settings, onPressed: () {}),
                 ],
               ),
             ),
 
-            // 하단 컨트롤
+            // 하단 UI
             Positioned(
               left: 0,
               right: 0,
@@ -131,7 +135,7 @@ class _CameraPageState extends State<CameraPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // 현재 수동 조작값 표시
+                  // 현재 설정값
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 20),
                     padding: const EdgeInsets.symmetric(
@@ -145,44 +149,45 @@ class _CameraPageState extends State<CameraPage> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _ValueItem(
-                          title: 'ISO',
-                          value: _iso.round().toString(),
-                        ),
-                        _ValueItem(title: 'SHUTTER', value: 'AUTO'),
-                        _ValueItem(title: 'EV', value: '0.0'),
-                        _ValueItem(title: 'FOCUS', value: 'AUTO'),
-                        _ValueItem(title: 'LENS', value: '1×'),
+                        ValueItem(title: 'ISO', value: iso.round().toString()),
+                        const ValueItem(title: 'SHUTTER', value: 'AUTO'),
+                        const ValueItem(title: 'EV', value: '0.0'),
+                        const ValueItem(title: 'FOCUS', value: 'AUTO'),
+                        const ValueItem(title: 'LENS', value: '1×'),
                       ],
                     ),
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 12),
 
+                  // ISO 슬라이더
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: Row(
                       children: [
-                        const Text(
-                          'ISO',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
+                        const SizedBox(
+                          width: 32,
+                          child: Text(
+                            'ISO',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                         Expanded(
                           child: Slider(
-                            value: _iso,
+                            value: iso,
                             min: 32,
                             max: 3200,
                             divisions: 99,
-                            onChanged: _setISO,
+                            onChanged: setISO,
                           ),
                         ),
                         SizedBox(
                           width: 50,
                           child: Text(
-                            _iso.round().toString(),
+                            iso.round().toString(),
                             textAlign: TextAlign.right,
                           ),
                         ),
@@ -190,21 +195,21 @@ class _CameraPageState extends State<CameraPage> {
                     ),
                   ),
 
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
 
                   // 촬영 버튼
                   GestureDetector(
-                    onTap: _capturePhoto,
+                    onTap: capturePhoto,
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 100),
                       width: 78,
                       height: 78,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: _isCapturing ? Colors.grey : Colors.white,
+                        color: isCapturing ? Colors.grey : Colors.white,
                         border: Border.all(color: Colors.white, width: 5),
                       ),
-                      child: _isCapturing
+                      child: isCapturing
                           ? const Padding(
                               padding: EdgeInsets.all(24),
                               child: CircularProgressIndicator(strokeWidth: 3),
@@ -232,7 +237,7 @@ class _CameraPageState extends State<CameraPage> {
     );
   }
 
-  Widget _topButton({required IconData icon, required VoidCallback onPressed}) {
+  Widget topButton({required IconData icon, required VoidCallback onPressed}) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.45),
@@ -247,11 +252,11 @@ class _CameraPageState extends State<CameraPage> {
   }
 }
 
-class _ValueItem extends StatelessWidget {
+class ValueItem extends StatelessWidget {
   final String title;
   final String value;
 
-  const _ValueItem({required this.title, required this.value});
+  const ValueItem({super.key, required this.title, required this.value});
 
   @override
   Widget build(BuildContext context) {
