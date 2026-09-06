@@ -185,6 +185,61 @@ final class CameraEngine: NSObject, AVCapturePhotoCaptureDelegate {
             iso: clampedISO
         )
     }
+
+    // MARK: - EV
+
+func setEV(_ ev: Float) throws {
+
+    guard let device = cameraDevice else {
+        throw CameraError.cameraUnavailable
+    }
+
+    try device.lockForConfiguration()
+
+    defer {
+        device.unlockForConfiguration()
+    }
+
+    let minEV: Float = -2.0
+    let maxEV: Float = 2.0
+
+    let clampedEV = min(
+        max(ev, minEV),
+        maxEV
+    )
+
+    device.setExposureTargetBias(
+        clampedEV
+    )
+}
+
+// MARK: - Focus
+
+func setFocus(_ focus: Float) throws {
+
+    guard let device = cameraDevice else {
+        throw CameraError.cameraUnavailable
+    }
+
+    guard device.isFocusModeSupported(.locked) else {
+        throw CameraError.focusUnavailable
+    }
+
+    try device.lockForConfiguration()
+
+    defer {
+        device.unlockForConfiguration()
+    }
+
+    let clampedFocus = min(
+        max(focus, 0.0),
+        1.0
+    )
+
+    device.setFocusModeLocked(
+        lensPosition: clampedFocus
+    )
+}
 }
 
 // MARK: - Camera Error
@@ -193,4 +248,5 @@ enum CameraError: Error {
 
     case cameraUnavailable
     case captureFailed
+    case focusUnavailable
 }

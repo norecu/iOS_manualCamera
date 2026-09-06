@@ -27,22 +27,22 @@ class CameraPage extends StatefulWidget {
 }
 
 class CameraPageState extends State<CameraPage> {
-  static const MethodChannel cameraChannel = MethodChannel('ios-camera');
+  static const MethodChannel _cameraChannel = MethodChannel('ios-camera');
 
-  bool isCapturing = false;
-  double iso = 100;
+  bool _isCapturing = false;
+  double _iso = 100;
 
-  Future<void> capturePhoto() async {
-    if (isCapturing) {
+  Future<void> _capturePhoto() async {
+    if (_isCapturing) {
       return;
     }
 
     setState(() {
-      isCapturing = true;
+      _isCapturing = true;
     });
 
     try {
-      await cameraChannel.invokeMethod('capturePhoto');
+      await _cameraChannel.invokeMethod('_capturePhoto');
 
       if (!mounted) {
         return;
@@ -54,43 +54,45 @@ class CameraPageState extends State<CameraPage> {
           duration: Duration(seconds: 1),
         ),
       );
-    } on PlatformException catch (e) {
+    } on PlatformException catch (error) {
       if (!mounted) {
         return;
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('사진 촬영 실패: ${e.message ?? '알 수 없는 오류'}')),
+        SnackBar(content: Text('사진 촬영 실패: ${error.message ?? '알 수 없는 오류'}')),
       );
-    } catch (e) {
+    } catch (error) {
       if (!mounted) {
         return;
       }
 
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('사진 촬영 실패: $e')));
+          .showSnackBar(SnackBar(content: Text('사진 촬영 실패: $error')));
     } finally {
       if (mounted) {
         setState(() {
-          isCapturing = false;
+          _isCapturing = false;
         });
       }
     }
   }
 
-  Future<void> setISO(double value) async {
+  Future<void> _setISO(double value) async {
     try {
-      await cameraChannel.invokeMethod('setISO', value);
+      await _cameraChannel.invokeMethod('_setISO', value);
 
       if (!mounted) {
         return;
       }
 
       setState(() {
-        iso = value;
+        _iso = value;
       });
-    } on PlatformException catch (e) {
-      debugPrint('ISO 변경 실패: ${e.message}');
+    } on PlatformException catch (error) {
+      debugPrint('ISO 변경 실패: ${error.message}');
+    } catch (error) {
+      debugPrint('ISO 변경 실패: $error');
     }
   }
 
@@ -149,7 +151,7 @@ class CameraPageState extends State<CameraPage> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        ValueItem(title: 'ISO', value: iso.round().toString()),
+                        ValueItem(title: 'ISO', value: _iso.round().toString()),
                         const ValueItem(title: 'SHUTTER', value: 'AUTO'),
                         const ValueItem(title: 'EV', value: '0.0'),
                         const ValueItem(title: 'FOCUS', value: 'AUTO'),
@@ -177,17 +179,17 @@ class CameraPageState extends State<CameraPage> {
                         ),
                         Expanded(
                           child: Slider(
-                            value: iso,
+                            value: _iso,
                             min: 32,
                             max: 3200,
                             divisions: 99,
-                            onChanged: setISO,
+                            onChanged: _setISO,
                           ),
                         ),
                         SizedBox(
                           width: 50,
                           child: Text(
-                            iso.round().toString(),
+                            _iso.round().toString(),
                             textAlign: TextAlign.right,
                           ),
                         ),
@@ -199,17 +201,17 @@ class CameraPageState extends State<CameraPage> {
 
                   // 촬영 버튼
                   GestureDetector(
-                    onTap: capturePhoto,
+                    onTap: _capturePhoto,
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 100),
                       width: 78,
                       height: 78,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: isCapturing ? Colors.grey : Colors.white,
+                        color: _isCapturing ? Colors.grey : Colors.white,
                         border: Border.all(color: Colors.white, width: 5),
                       ),
-                      child: isCapturing
+                      child: _isCapturing
                           ? const Padding(
                               padding: EdgeInsets.all(24),
                               child: CircularProgressIndicator(strokeWidth: 3),
