@@ -240,6 +240,97 @@ func setFocus(_ focus: Float) throws {
         lensPosition: clampedFocus
     )
 }
+
+// MARK: - Shutter
+
+func setShutter(_ seconds: Double) throws {
+
+    guard let device = cameraDevice else {
+        throw CameraError.cameraUnavailable
+    }
+
+    try device.lockForConfiguration()
+
+    defer {
+        device.unlockForConfiguration()
+    }
+
+    let minDuration = CMTimeGetSeconds(
+        device.activeFormat.minExposureDuration
+    )
+
+    let maxDuration = CMTimeGetSeconds(
+        device.activeFormat.maxExposureDuration
+    )
+
+    let clampedSeconds = min(
+        max(seconds, minDuration),
+        maxDuration
+    )
+
+    let duration = CMTimeMakeWithSeconds(
+        clampedSeconds,
+        preferredTimescale: 1_000_000
+    )
+
+    device.setExposureModeCustom(
+        duration: duration,
+        iso: device.iso
+    )
+}
+
+// MARK: - Focus
+
+func setFocus(_ focus: Float) throws {
+
+    guard let device = cameraDevice else {
+        throw CameraError.cameraUnavailable
+    }
+
+    guard device.isFocusModeSupported(.locked) else {
+        throw CameraError.focusUnavailable
+    }
+
+    try device.lockForConfiguration()
+
+    defer {
+        device.unlockForConfiguration()
+    }
+
+    let clampedFocus = min(
+        max(focus, 0.0),
+        1.0
+    )
+
+    device.setFocusModeLocked(
+        lensPosition: clampedFocus
+    )
+}
+
+// MARK: - Zoom
+
+func setZoom(_ zoom: Float) throws {
+
+    guard let device = cameraDevice else {
+        throw CameraError.cameraUnavailable
+    }
+
+    try device.lockForConfiguration()
+
+    defer {
+        device.unlockForConfiguration()
+    }
+
+    let minZoom = device.minAvailableVideoZoomFactor
+    let maxZoom = device.maxAvailableVideoZoomFactor
+
+    let clampedZoom = min(
+        max(CGFloat(zoom), minZoom),
+        maxZoom
+    )
+
+    device.videoZoomFactor = clampedZoom
+}
 }
 
 // MARK: - Camera Error

@@ -84,6 +84,80 @@ final class CameraChannel {
                         )
                     )
                 }
+            case "setShutter":
+    guard let seconds = call.arguments as? Double else {
+        result(
+            FlutterError(
+                code: "INVALID_SHUTTER",
+                message: "셔터 속도 값이 올바르지 않습니다.",
+                details: nil
+            )
+        )
+        return
+    }
+
+    do {
+        try cameraEngine.setShutter(seconds)
+        result(nil)
+    } catch {
+        result(
+            FlutterError(
+                code: "SHUTTER_FAILED",
+                message: error.localizedDescription,
+                details: nil
+            )
+        )
+    }
+
+case "setFocus":
+    guard let focus = call.arguments as? Double else {
+        result(
+            FlutterError(
+                code: "INVALID_FOCUS",
+                message: "초점 값이 올바르지 않습니다.",
+                details: nil
+            )
+        )
+        return
+    }
+
+    do {
+        try cameraEngine.setFocus(Float(focus))
+        result(nil)
+    } catch {
+        result(
+            FlutterError(
+                code: "FOCUS_FAILED",
+                message: error.localizedDescription,
+                details: nil
+            )
+        )
+    }
+
+case "setZoom":
+    guard let zoom = call.arguments as? Double else {
+        result(
+            FlutterError(
+                code: "INVALID_ZOOM",
+                message: "줌 값이 올바르지 않습니다.",
+                details: nil
+            )
+        )
+        return
+    }
+
+    do {
+        try cameraEngine.setZoom(Float(zoom))
+        result(nil)
+    } catch {
+        result(
+            FlutterError(
+                code: "ZOOM_FAILED",
+                message: error.localizedDescription,
+                details: nil
+            )
+        )
+    }
 
             // MARK: - Unknown
 
