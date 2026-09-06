@@ -1,6 +1,7 @@
 import Flutter
 import UIKit
 import AVFoundation
+import Photos
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -20,6 +21,46 @@ import AVFoundation
                 didFinishLaunchingWithOptions: launchOptions
             )
         }
+
+        let cameraChannel = FlutterMethodChannel(
+    name: "ios-camera",
+    binaryMessenger: controller.binaryMessenger
+)
+
+cameraChannel.setMethodCallHandler { [weak self] call, result in
+    guard let self = self else {
+        result(
+            FlutterError(
+                code: "APP_DELEGATE_ERROR",
+                message: "AppDelegate를 찾을 수 없습니다.",
+                details: nil
+            )
+        )
+        return
+    }
+
+    switch call.method {
+    case "capturePhoto":
+        self.cameraEngine.capturePhoto { captureResult in
+            switch captureResult {
+            case .success:
+                result(nil)
+
+            case .failure(let error):
+                result(
+                    FlutterError(
+                        code: "CAPTURE_FAILED",
+                        message: error.localizedDescription,
+                        details: nil
+                    )
+                )
+            }
+        }
+
+    default:
+        result(FlutterMethodNotImplemented)
+    }
+}
 
         let factory = CameraPlatformViewFactory(
             cameraEngine: cameraEngine
@@ -56,12 +97,13 @@ import AVFoundation
 
 // MARK: - Camera Engine
 
-final class CameraEngine: NSObject {
+final class CameraEngine: NSObject, AVCapturePhotoCaptureDelegate {
 
     let session = AVCaptureSession()
 
     private let photoOutput = AVCapturePhotoOutput()
     private var videoDevice: AVCaptureDevice?
+    private var captureCompletion: ((Result<Void, Error>) -> Void)?
 
     func setup() throws {
 
@@ -114,12 +156,69 @@ final class CameraEngine: NSObject {
             self.session.stopRunning()
         }
     }
+
+    func capturePhoto(completion: @escaping (Result<Void, Error>) -> Void) {
+        let settings = AVCapturePhotoSettings()
+
+        if photoOutput.availablePhotoCodecTypes.contains(.hevc) {
+            settings.codec = .hevc
+        }
+
+        photoOutput.capturePhoto(with: settings, delegate: self)
+        self.captureCompletion = completion
+    }
+
+    func photoOutput(
+        _ output: AVCapturePhotoOutput,
+        didFinishProcessingPhoto photo: AVCapturePhoto,
+        error: Error?
+        ) {
+        if let error = error {
+            captureCompletion?(.failure(error))
+            captureCompletion = nil
+            return
+        }
+
+        guard let data = photo.fileDataRepresentation() else {
+            captureCompletion?(
+                .failure(CameraError.captureFailed)
+            )
+            captureCompletion = nil
+            return
+        }
+
+        PHPhotoLibrary.shared().performChanges({
+            let request = PHAssetCreationRequest.forAsset()
+
+            let options = PHAssetResourceCreationOptions()
+            request.addResource(
+                with: .photo,
+                data: data,
+                options: options
+            )
+        }) { success, error in
+
+            DispatchQueue.main.async {
+                if let error = error {
+                    self.captureCompletion?(.failure(error))
+                } else if success {
+                    self.captureCompletion?(.success(()))
+                } else {
+                    self.captureCompletion?(
+                        .failure(CameraError.captureFailed)
+                    )
+                }
+
+                self.captureCompletion = nil
+            }
+        }   
+    }
 }
 
 enum CameraError: Error {
     case cameraUnavailable
+    case captureFailed
 }
-
 
 // MARK: - Camera Preview
 
